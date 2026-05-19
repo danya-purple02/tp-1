@@ -297,7 +297,11 @@ public:
 
 int main(int argc, char** argv)
 {
-    setlocale(LC_ALL, "Russian");
+    //setlocale(LC_ALL, "Russian");
+
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
+    setlocale(LC_ALL, ".UTF-8");
 
     CmdArgsParser config;
 	if(!config.parseArgs(argc, argv)) return 99;
