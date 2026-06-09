@@ -6,6 +6,7 @@
 #include <regex>
 #include <clocale>
 #include <iterator>
+#include <stdexcept>
 
 #include <CLI/CLI.hpp>
 
@@ -78,7 +79,8 @@ public:
         }
         catch (const ParseError& e)
         {
-            return config.exit(e);
+            config.exit(e);
+            return false;
         }
     }
 
