@@ -9,6 +9,8 @@
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
+#include "loadtime.h"
+#include "runtime.h"
 
 using namespace std;
 using namespace CLI;
@@ -102,105 +104,11 @@ private:
 
     vector<string> read_lines(const string& filename)
     {
-        ifstream file(filename);
-        if (!file.is_open())
-        {
-            throw runtime_error("Не удалось открыть файл: " + filename);
-        }
-
         vector<string> lines;
-        string line;
 
-        while (getline(file, line))
-            lines.push_back(line);
+        openDocument(filename, lines);
 
         return lines;
-    }
-
-    void parseHeaders(const vector<string>& lines, vector<string>& result)
-    {
-        for (const auto& line : lines) {
-            smatch m;
-            if (regex_match(line, m, re_header)) {
-                result.push_back(m[2].str());
-            }
-        }
-    }
-
-    void parseParagraphs(const vector<string>& lines, vector<string>& result)
-    {
-        for (const auto& line : lines) {
-            if (line.empty()) continue;
-
-            if (regex_match(line, re_header)) continue;
-            if (regex_match(line, re_olist)) continue;
-
-            if (!line.empty())
-                result.push_back(line);
-        }
-    }
-
-    void parseOLists(const vector<string>& lines, vector<string>& result)
-    {
-        vector<string> currentList;
-
-        for (auto it = lines.cbegin(); it != lines.cend(); ++it)
-        {
-            const string& line = *it;
-            if (regex_match(line, re_olist))
-            {
-                currentList.push_back(line);
-            }
-            else
-            {
-                if (!currentList.empty())
-                {
-                    if (isOrderedOneLevelList(currentList))
-                    {
-                        for (const auto& itemLine : currentList)
-                        {
-                            result.push_back(itemLine);
-                        }
-                        currentList.clear();
-                    }
-                }
-            }
-        }
-
-        if (!currentList.empty())
-        {
-            if (isOrderedOneLevelList(currentList))
-            {
-                for (const auto& itemLine : currentList)
-                {
-                    result.push_back(itemLine);
-                }
-                currentList.clear();
-            }
-        }
-    }
-
-    bool isOrderedOneLevelList(const vector<string>& lines)
-    {
-        if (lines.empty())
-            return false;
-
-        int expected = 1;
-
-        for (const auto& line : lines)
-        {
-            smatch m;
-            if (!regex_match(line, m, re_olist))
-                return false;
-
-            int num = stoi(m[1].str());
-
-            if (num != expected)
-                return false;
-
-            expected++;
-        }
-        return true;
     }
 
 public:
@@ -264,35 +172,66 @@ public:
         struct ParseResults res;
 		vector<string> lines = read_lines(fileName);
 
+        HMODULE runtimeDll = LoadLibraryA("runtime.dll");
+
+        if (!runtimeDll)
+        {
+            runtimeDll = LoadLibraryA("build\\runtime.dll");
+        }
+
+        ParseHeadersFunc parseHeadersDll =
+            reinterpret_cast<ParseHeadersFunc>(
+                GetProcAddress(runtimeDll, "parseHeaders")
+            );
+
+        ParseParagraphsFunc parseParagraphsDll =
+            reinterpret_cast<ParseParagraphsFunc>(
+                GetProcAddress(runtimeDll, "parseParagraphs")
+            );
+
+        ParseOListsFunc parseOListsDll =
+            reinterpret_cast<ParseOListsFunc>(
+                GetProcAddress(runtimeDll, "parseOLists")
+            );
+
+        if (!parseHeadersDll || !parseParagraphsDll || !parseOListsDll)
+        {
+            FreeLibrary(runtimeDll);
+            throw runtime_error("Не удалось получить функции из runtime.dll");
+        }
+
         switch (mode)
         {
         case 1:
         {
-            parseHeaders(lines, res.headers);
-            parseParagraphs(lines, res.paragraphs);
-            parseOLists(lines, res.o_lists);
+            parseHeadersDll(lines, res.headers);
+            parseParagraphsDll(lines, res.paragraphs);
+            parseOListsDll(lines, res.o_lists);
             break;
         }
         case 2:
         {
-            parseHeaders(lines, res.headers);
+            parseHeadersDll(lines, res.headers);
             break;
         }
         case 3:
         {
-            parseParagraphs(lines, res.paragraphs);
+            parseParagraphsDll(lines, res.paragraphs);
             break;
         }
         case 4:
         {
-            parseOLists(lines, res.o_lists);
+            parseOListsDll(lines, res.o_lists);
             break;
         }
         default:
         {
+            FreeLibrary(runtimeDll);
             throw runtime_error("Неверный режим: " + to_string(mode));
         }
         }
+
+        FreeLibrary(runtimeDll);
         return res;
     }
 };

@@ -3,19 +3,31 @@
 	"tasks": [
 		{
 			"type": "cppbuild",
-			"label": "Build with G++ 16.1.0",
+			"label": "Build main",
 			"command": "C:\\drivers\\mingw64\\bin\\g++.exe",
 			"args": [
 				"-fdiagnostics-color=always",
 				"-g",
 				"-std=c++20",
-				"${file}",
+				"${workspaceFolder}\\src\\main.cpp",
 				"-o",
-				"${workspaceFolder}\\build\\${fileBasenameNoExtension}.exe",
+				"${workspaceFolder}\\build\\main.exe",
+
 				"-I",
 				"${workspaceFolder}\\third_party\\CLI11\\include",
+
+				"-I",
+				"${workspaceFolder}\\src\\loadtime",
+
+				"-I",
+				"${workspaceFolder}\\src\\runtime",
+
 				"-finput-charset=UTF-8",
-				"-fexec-charset=UTF-8"
+				"-fexec-charset=UTF-8",
+
+				"-L",
+				"${workspaceFolder}\\build",
+				"-lloadtime",
 			],
 			"options": {
 				"cwd": "${fileDirname}"
@@ -25,6 +37,61 @@
 			],
 			"group": "build",
 			"detail": "compiler: C:\\drivers\\mingw64\\bin\\g++.exe"
+		},
+		{
+			"label": "Build loadtime dll",
+			"type": "process",
+			"command": "C:\\drivers\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-fdiagnostics-color=always",
+				"-g",
+				"-std=c++20",
+				"-shared",
+				"-DBUILDING_LOADTIME_DLL",
+				"${workspaceFolder}\\src\\loadtime\\loadtime.cpp",
+				"-o",
+				"${workspaceFolder}\\build\\loadtime.dll",
+				"-I",
+				"${workspaceFolder}\\src\\loadtime",
+				"-finput-charset=UTF-8",
+				"-fexec-charset=UTF-8",
+				"-Wl,--out-implib,${workspaceFolder}\\build\\libloadtime.a"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "Build load-time dynamic library"
+		},
+		{
+			"label": "Build runtime dll",
+			"type": "process",
+			"command": "C:\\drivers\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-fdiagnostics-color=always",
+				"-g",
+				"-std=c++20",
+				"-shared",
+				"${workspaceFolder}\\src\\runtime\\runtime.cpp",
+				"${workspaceFolder}\\src\\runtime\\runtime.def",
+				"-o",
+				"${workspaceFolder}\\build\\runtime.dll",
+				"-I",
+				"${workspaceFolder}\\src\\runtime",
+				"-finput-charset=UTF-8",
+				"-fexec-charset=UTF-8"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "Build run-time dynamic library"
 		}
 	]
 }
