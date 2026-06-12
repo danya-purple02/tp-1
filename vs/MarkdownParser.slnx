@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="loadtime/loadtime.vcxproj" Id="b31db003-8ccc-4039-aa6a-109268ba90a3" />
+  <Project Path="main/main.vcxproj" Id="62b66eca-e72a-4adc-bcbb-853690a79c4d">
+    <BuildDependency Project="runtime/runtime.vcxproj" />
+  </Project>
+  <Project Path="runtime/runtime.vcxproj" Id="32fe82be-b6f5-4789-9b2d-f53bbc365415" />
+</Solution>

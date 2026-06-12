@@ -1,1 +1,10 @@
 third_party/
+
+.vs/
+vs/.vs/
+
+*.VC.db
+*.VC.VC.opendb
+*.ipch
+*.suo
+*.user

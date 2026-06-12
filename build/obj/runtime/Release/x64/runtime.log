@@ -1,0 +1,7 @@
+﻿  runtime.cpp
+     Создается библиотека D:\PSU\5_term\TP\res\MarkdownParser\vs\..\build\Release\x64\runtime.lib и объект D:\PSU\5_term\TP\res\MarkdownParser\vs\..\build\Release\x64\runtime.exp
+  Создание кода
+  Previous IPDB not found, fall back to full compilation.
+  All 1184 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Создание кода завершено
+  runtime.vcxproj -> D:\PSU\5_term\TP\res\MarkdownParser\build\Release\x64\runtime.dll
