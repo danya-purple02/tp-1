@@ -27,10 +27,10 @@
 
 				"-L",
 				"${workspaceFolder}\\build",
-				"-lloadtime",
+				"-lloadtime"
 			],
 			"options": {
-				"cwd": "${fileDirname}"
+				"cwd": "${workspaceFolder}"
 			},
 			"problemMatcher": [
 				"$gcc"

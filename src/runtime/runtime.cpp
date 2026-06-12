@@ -60,9 +60,9 @@ extern "C" void parseParagraphs(
         if (regex_match(line, re_header)) continue;
         if (regex_match(line, re_olist)) continue;
 
-        if (!line.empty())
-            paragraphs.push_back(line);
-    }}
+        paragraphs.push_back(line);
+    }
+}
 
 extern "C" void parseOLists(
     const std::vector<std::string>& lines,
@@ -88,8 +88,9 @@ extern "C" void parseOLists(
                     {
                         o_lists.push_back(itemLine);
                     }
-                    currentList.clear();
                 }
+
+                currentList.clear();
             }
         }
     }
@@ -102,7 +103,8 @@ extern "C" void parseOLists(
             {
                 o_lists.push_back(itemLine);
             }
-            currentList.clear();
         }
+
+        currentList.clear();
     }
 }

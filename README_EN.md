@@ -2,27 +2,58 @@ This README generated with the assistance of AI.
 
 # MarkdownParser
 
-Console application written in C++ for parsing Markdown files and extracting selected markup elements.
+A C++ console application for extracting elements from a Markdown document.
 
-The program receives a Markdown file path through command-line arguments and outputs the extracted content according to the selected mode.
+The project was developed as part of a laboratory work for the course “Technology of Programming”.
 
-## Project information
+## Features
 
-**Author:** danya_purple02  
-**Creation date:** 05.03.2026  
-**Repository on GitHub:** [TP-1](https://github.com/danya-purple02/TP-1.git)
+The program extracts the following elements from a Markdown file:
 
-## Description
-
-This project was created as part of a laboratory work on C++ programming.
-
-The application works with Markdown documents and can extract:
-
-- headers;
+- headings;
 - paragraphs;
-- ordered one-level lists.
+- single-level ordered lists.
 
-Command-line arguments are processed using the CLI11 library.
+Supported modes:
+
+```text
+all         print all found elements
+headers     print headings only
+paragraphs  print paragraphs only
+o_lists     print single-level ordered lists only
+```
+
+## Implementation details
+
+The project uses two dynamically linked libraries:
+
+```text
+loadtime.dll
+```
+
+The first library is loaded implicitly when the program starts.
+
+It is responsible for working with the Markdown document:
+
+- opening the file;
+- reading file lines;
+- closing the document / clearing data after processing.
+
+```text
+runtime.dll
+```
+
+The second library is loaded explicitly at runtime using Windows API:
+
+- `LoadLibraryA`;
+- `GetProcAddress`;
+- `FreeLibrary`.
+
+It is responsible for searching Markdown elements:
+
+- `parseHeaders`;
+- `parseParagraphs`;
+- `parseOLists`.
 
 ## Project structure
 
@@ -30,17 +61,30 @@ Command-line arguments are processed using the CLI11 library.
 MarkdownParser/
 │
 ├─ .vscode/
-│  ├─ c_cpp_properties.json
 │  └─ tasks.json
 │
 ├─ build/
-│  └─ main.exe
+│  ├─ main.exe
+│  ├─ loadtime.dll
+│  ├─ libloadtime.a
+│  └─ runtime.dll
 │
 ├─ data/
-│  └─ test Markdown files
+│  └─ markdown_mixed.md
+│
+├─ reports/
 │
 ├─ src/
-│  └─ main.cpp
+│  ├─ main.cpp
+│  │
+│  ├─ loadtime/
+│  │  ├─ loadtime.h
+│  │  └─ loadtime.cpp
+│  │
+│  └─ runtime/
+│     ├─ runtime.h
+│     ├─ runtime.cpp
+│     └─ runtime.def
 │
 ├─ third_party/
 │  └─ CLI11/
@@ -50,90 +94,164 @@ MarkdownParser/
 └─ README_EN.md
 ```
 
-## Requirements
+## Main files
 
-To build and run the project, you need:
+### `src/main.cpp`
 
-- Windows;
-- Visual Studio Code;
-- C/C++ extension for VS Code;
-- MinGW-w64 / WinLibs GCC;
-- CLI11 library.
+The main application file.
 
-The project uses the following compiler:
+It is responsible for:
+
+- parsing command-line arguments;
+- calling functions from `loadtime.dll`;
+- explicitly loading `runtime.dll`;
+- getting function addresses using `GetProcAddress`;
+- calling Markdown element parsing functions;
+- printing results;
+- handling exceptional situations.
+
+### `src/loadtime/loadtime.h`
+
+Header file of the first DLL.
+
+It declares the following functions:
 
 ```text
-G++ 16.1.0
+openDocument
+closeDocument
+```
+
+It also contains the `LOADTIME_API` macro used for DLL function export and import.
+
+### `src/loadtime/loadtime.cpp`
+
+Implementation of the first DLL.
+
+The `openDocument` function opens a Markdown file, reads its lines, and passes them to the main program.
+
+The `closeDocument` function clears the container with document lines after processing.
+
+### `src/runtime/runtime.h`
+
+Header file of the second DLL.
+
+It contains function pointer types:
+
+```text
+ParseHeadersFunc
+ParseParagraphsFunc
+ParseOListsFunc
+```
+
+These types are used in `main.cpp` after calling `GetProcAddress`.
+
+### `src/runtime/runtime.cpp`
+
+Implementation of the second DLL.
+
+It contains the following functions:
+
+```text
+parseHeaders
+parseParagraphs
+parseOLists
+```
+
+It also contains the helper function `isOrderedOneLevelList`, which is used inside `parseOLists`.
+
+### `src/runtime/runtime.def`
+
+Module-definition file for exporting functions from the second DLL.
+
+It contains the list of functions exported from `runtime.dll`:
+
+```text
+parseHeaders
+parseParagraphs
+parseOLists
+```
+
+## Dependencies
+
+The project uses CLI11 for command-line argument parsing.
+
+If the `third_party/CLI11` folder is missing, it can be added with:
+
+```bash
+git clone --depth 1 https://github.com/CLIUtils/CLI11.git third_party/CLI11
 ```
 
 ## Build
 
-The project is built through the configured VS Code build task.
+The project is built in Visual Studio Code using tasks from `.vscode/tasks.json`.
 
-Press:
-
-```text
-Ctrl + Shift + B
-```
-
-After the build, the executable file will be created in the following directory:
+Build order:
 
 ```text
-build/main.exe
+Terminal → Run Task... → Build loadtime dll
+Terminal → Run Task... → Build runtime dll
+Terminal → Run Task... → Build main
 ```
 
-Manual build command example:
+After building, the `build` directory should contain:
 
-```powershell
-C:\drivers\mingw64\bin\g++.exe -fdiagnostics-color=always -g -std=c++20 -I third_party\CLI11\include src\main.cpp -o build\main.exe
+```text
+main.exe
+loadtime.dll
+libloadtime.a
+runtime.dll
 ```
 
 ## Run
 
-Example launch command:
+Run with all elements:
 
 ```powershell
-.\build\main.exe --mode all --file ".\data\markdown_mixed.md"
+./build/main.exe --mode all --file "./data/markdown_mixed.md"
 ```
 
-## Command-line arguments
-
-```text
---mode    parsing mode
---file    path to the Markdown file
-```
-
-Example:
+Print headings only:
 
 ```powershell
-.\build\main.exe --mode all --file ".\data\test.md"
+./build/main.exe --mode headers --file "./data/markdown_mixed.md"
 ```
 
-## Used libraries
-
-### CLI11
-
-This project uses the [CLI11](https://github.com/CLIUtils/CLI11) library for command-line argument parsing.
-
-CLI11 is a header-only library, so it is enough to download its source files into the project and add the include directory to the build configuration. The project uses the following include directive:
-
-```cpp
-#include <CLI/CLI.hpp>
-```
-
-To install CLI11 into the project, run the following command from the repository root directory:
+Print paragraphs only:
 
 ```powershell
-git clone https://github.com/CLIUtils/CLI11.git third_party\CLI11
+./build/main.exe --mode paragraphs --file "./data/markdown_mixed.md"
 ```
 
-After running the command, the following file should appear in the project:
+Print single-level ordered lists only:
 
-```text
-third_party\CLI11\include\CLI\CLI.hpp
+```powershell
+./build/main.exe --mode o_lists --file "./data/markdown_mixed.md"
 ```
 
+## Error handling
 
-## Notes
+The program handles the following exceptional situations:
 
-The project is configured to use UTF-8 encoding for correct processing and output of Russian text in the terminal.
+- invalid operating mode;
+- inability to open the Markdown file;
+- inability to load `runtime.dll`;
+- inability to get function addresses from `runtime.dll`.
+
+## Technologies
+
+- C++;
+- GCC / MinGW;
+- Visual Studio Code;
+- Windows API;
+- dynamic-link libraries;
+- load-time dynamic linking;
+- run-time dynamic linking;
+- regular expressions;
+- CLI11.
+
+## Author
+
+author — danya_purple02  
+creation date — 05.03.2026
+
+Repository on GitHub — https://github.com/danya-purple02/TP-1.git

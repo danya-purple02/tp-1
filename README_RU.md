@@ -1,28 +1,58 @@
 Этот README сгенерирован при помощи искусственного интеллекта.
-
 # MarkdownParser
 
-Консольное приложение на C++ для разбора Markdown-файлов и извлечения выбранных элементов разметки.
+Консольное приложение на C++ для извлечения элементов из Markdown-документа.
 
-Программа получает путь к Markdown-файлу через аргументы командной строки и выводит найденные элементы в соответствии с выбранным режимом работы.
+Проект выполнен в рамках лабораторной работы по дисциплине «Технология программирования».
 
-## Информация о проекте
+## Возможности
 
-**Автор:** danya_purple02  
-**Дата создания:** 05.03.2026  
-**Репозиторий на GitHub:** [TP-1](https://github.com/danya-purple02/TP-1.git)
-
-## Описание
-
-Проект создан в рамках лабораторной работы по программированию на C++.
-
-Приложение работает с Markdown-документами и умеет извлекать:
+Программа извлекает из Markdown-файла:
 
 - заголовки;
 - абзацы;
 - упорядоченные одноуровневые списки.
 
-Для обработки аргументов командной строки используется библиотека CLI11.
+Поддерживаемые режимы работы:
+
+```text
+all         вывести все найденные элементы
+headers     вывести только заголовки
+paragraphs  вывести только абзацы
+o_lists     вывести только упорядоченные одноуровневые списки
+```
+
+## Особенности реализации
+
+Проект использует две динамически подключаемые библиотеки:
+
+```text
+loadtime.dll
+```
+
+Первая библиотека подключается неявно во время загрузки программы.
+
+Она отвечает за работу с Markdown-документом:
+
+- открытие файла;
+- чтение строк файла;
+- закрытие документа / очистку данных после обработки.
+
+```text
+runtime.dll
+```
+
+Вторая библиотека подключается явно во время выполнения программы с помощью Windows API:
+
+- `LoadLibraryA`;
+- `GetProcAddress`;
+- `FreeLibrary`.
+
+Она отвечает за поиск элементов Markdown-документа:
+
+- `parseHeaders`;
+- `parseParagraphs`;
+- `parseOLists`.
 
 ## Структура проекта
 
@@ -33,13 +63,27 @@ MarkdownParser/
 │  └─ tasks.json
 │
 ├─ build/
-│  └─ main.exe
+│  ├─ main.exe
+│  ├─ loadtime.dll
+│  ├─ libloadtime.a
+│  └─ runtime.dll
 │
 ├─ data/
-│  └─ тестовые Markdown-файлы
+│  └─ markdown_mixed.md
+│
+├─ reports/
 │
 ├─ src/
-│  └─ main.cpp
+│  ├─ main.cpp
+│  │
+│  ├─ loadtime/
+│  │  ├─ loadtime.h
+│  │  └─ loadtime.cpp
+│  │
+│  └─ runtime/
+│     ├─ runtime.h
+│     ├─ runtime.cpp
+│     └─ runtime.def
 │
 ├─ third_party/
 │  └─ CLI11/
@@ -49,89 +93,164 @@ MarkdownParser/
 └─ README_EN.md
 ```
 
-## Требования
+## Назначение основных файлов
 
-Для сборки и запуска проекта нужны:
+### `src/main.cpp`
 
-- Windows;
+Основной файл программы.
+
+Отвечает за:
+
+- обработку аргументов командной строки;
+- вызов функций из `loadtime.dll`;
+- явную загрузку `runtime.dll`;
+- получение адресов функций через `GetProcAddress`;
+- вызов функций поиска элементов;
+- вывод результата;
+- обработку исключительных ситуаций.
+
+### `src/loadtime/loadtime.h`
+
+Заголовочный файл первой DLL.
+
+Содержит объявления функций:
+
+```text
+openDocument
+closeDocument
+```
+
+Также содержит макрос `LOADTIME_API`, который используется для экспорта и импорта функций DLL.
+
+### `src/loadtime/loadtime.cpp`
+
+Реализация первой DLL.
+
+Функция `openDocument` открывает Markdown-файл, считывает его строки и передаёт их основной программе.
+
+Функция `closeDocument` очищает контейнер со строками документа после завершения обработки.
+
+### `src/runtime/runtime.h`
+
+Заголовочный файл второй DLL.
+
+Содержит типы указателей на функции:
+
+```text
+ParseHeadersFunc
+ParseParagraphsFunc
+ParseOListsFunc
+```
+
+Эти типы используются в `main.cpp` после вызова `GetProcAddress`.
+
+### `src/runtime/runtime.cpp`
+
+Реализация второй DLL.
+
+Содержит функции:
+
+```text
+parseHeaders
+parseParagraphs
+parseOLists
+```
+
+Также содержит вспомогательную функцию `isOrderedOneLevelList`, которая используется внутри `parseOLists`.
+
+### `src/runtime/runtime.def`
+
+Файл экспорта функций второй DLL.
+
+Содержит список функций, которые должны быть доступны из `runtime.dll`:
+
+```text
+parseHeaders
+parseParagraphs
+parseOLists
+```
+
+## Зависимости
+
+Проект использует библиотеку CLI11 для обработки аргументов командной строки.
+
+Если папки `third_party/CLI11` нет, её можно добавить командой:
+
+```bash
+git clone --depth 1 https://github.com/CLIUtils/CLI11.git third_party/CLI11
+```
+
+## Сборка проекта
+
+Проект собирается в Visual Studio Code через задачи из файла `.vscode/tasks.json`.
+
+Порядок сборки:
+
+```text
+Terminal → Run Task... → Build loadtime dll
+Terminal → Run Task... → Build runtime dll
+Terminal → Run Task... → Build main
+```
+
+После сборки в папке `build` должны появиться файлы:
+
+```text
+main.exe
+loadtime.dll
+libloadtime.a
+runtime.dll
+```
+
+## Запуск программы
+
+Пример запуска с выводом всех элементов:
+
+```powershell
+./build/main.exe --mode all --file "./data/markdown_mixed.md"
+```
+
+Вывод только заголовков:
+
+```powershell
+./build/main.exe --mode headers --file "./data/markdown_mixed.md"
+```
+
+Вывод только абзацев:
+
+```powershell
+./build/main.exe --mode paragraphs --file "./data/markdown_mixed.md"
+```
+
+Вывод только упорядоченных одноуровневых списков:
+
+```powershell
+./build/main.exe --mode o_lists --file "./data/markdown_mixed.md"
+```
+
+## Обработка ошибок
+
+В программе предусмотрена обработка исключительных ситуаций:
+
+- неверный режим работы;
+- невозможность открыть Markdown-файл;
+- невозможность загрузить `runtime.dll`;
+- невозможность получить адреса функций из `runtime.dll`.
+
+## Используемые технологии
+
+- C++;
+- GCC / MinGW;
 - Visual Studio Code;
-- расширение C/C++ для VS Code;
-- MinGW-w64 / WinLibs GCC;
-- библиотека CLI11.
+- Windows API;
+- динамически подключаемые библиотеки;
+- load-time dynamic linking;
+- run-time dynamic linking;
+- регулярные выражения;
+- CLI11.
 
-Используемый компилятор:
+## Автор
 
-```text
-G++ 16.1.0
-```
+author — danya_purple02  
+creation date — 05.03.2026
 
-## Сборка
-
-Проект собирается через задачу VS Code.
-
-Нажмите:
-
-```text
-Ctrl + Shift + B
-```
-
-После сборки исполняемый файл будет создан в папке:
-
-```text
-build/main.exe
-```
-
-Пример ручной команды сборки:
-
-```powershell
-C:\drivers\mingw64\bin\g++.exe -fdiagnostics-color=always -g -std=c++20 -I third_party\CLI11\include src\main.cpp -o build\main.exe
-```
-
-## Запуск
-
-Пример запуска:
-
-```powershell
-.\build\main.exe --mode all --file ".\data\markdown_mixed.md"
-```
-
-## Аргументы командной строки
-
-```text
---mode    режим разбора файла
---file    путь к Markdown-файлу
-```
-
-Пример:
-
-```powershell
-.\build\main.exe --mode all --file ".\data\test.md"
-```
-
-## Используемые библиотеки
-
-### CLI11
-
-В проекте используется библиотека [CLI11](https://github.com/CLIUtils/CLI11) для обработки аргументов командной строки.
-
-CLI11 является header-only библиотекой, поэтому для её использования достаточно скачать исходные файлы в проект и указать путь к заголовочным файлам при сборке. В проекте используется подключение:
-
-```cpp
-#include <CLI/CLI.hpp>
-```
-
-Для установки CLI11 в проект выполните команду из корневой папки репозитория:
-
-```powershell
-git clone https://github.com/CLIUtils/CLI11.git third_party\CLI11
-```
-
-После выполнения команды в проекте должен появиться файл:
-
-```text
-third_party\CLI11\include\CLI\CLI.hpp
-```
-
-## Примечания
-
-Проект настроен на использование UTF-8 для корректной обработки и вывода русского текста в терминале.
+Repository on GitHub — https://github.com/danya-purple02/TP-1.git

@@ -1,11 +1,8 @@
 #include <windows.h>
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
-#include <regex>
 #include <clocale>
-#include <iterator>
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
@@ -99,9 +96,6 @@ public:
 
 class MarkdownParser {
 private:
-    regex re_header = regex(R"(^\s{0,3}(#{1,6})\s+(.*)$)");
-    regex re_olist = regex(R"(^\s*(\d+)\.\s+(.*)$)");
-
     vector<string> read_lines(const string& filename)
     {
         vector<string> lines;
@@ -179,6 +173,11 @@ public:
             runtimeDll = LoadLibraryA("build\\runtime.dll");
         }
 
+        if (!runtimeDll)
+        {
+            throw runtime_error("Не удалось загрузить runtime.dll");
+        }
+
         ParseHeadersFunc parseHeadersDll =
             reinterpret_cast<ParseHeadersFunc>(
                 GetProcAddress(runtimeDll, "parseHeaders")
@@ -232,6 +231,7 @@ public:
         }
 
         FreeLibrary(runtimeDll);
+        closeDocument(lines);
         return res;
     }
 };

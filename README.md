@@ -2,10 +2,10 @@ This README generated with the assistance of AI.
 
 # MarkdownParser
 
-## Language / Язык
+Choose language:
 
-- [English version](README_EN.md)
 - [Русская версия](README_RU.md)
+- [English version](README_EN.md)
 
 ---
 
